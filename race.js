@@ -13,6 +13,7 @@ function Race(size_y, size_x) {
   this.constructor.prototype.constructor.apply(this);
   this.startPositions = {};
   this.field = this._generateField(this.field);
+  this.turns = {};
 }
 
 Race.prototype._generateField = function(field) {
@@ -67,8 +68,23 @@ Race.prototype.start = function() {
     TurnBased.prototype.start.apply(this, arguments);
   } catch (e) {
     // rollback  
-    this.positions = {};
+    this.startPositions = {};
     throw e;
+  }
+};
+
+Race.prototype.getPositions = function() {
+  return this.startPositions;
+};
+
+Race.prototype.makePureTurn = function(player, turn) {
+  var bothZero = (Math.abs(turn.dx) || Math.abs(turn.dy)) == 0;
+  if (Math.abs(turn.dx) <= 1 && Math.abs(turn.dy) <= 1 && !bothZero) {
+    if (!this.turns[player.id])
+      this.turns[player.id] = [];
+    this.turns[player.id].push(turn);
+  } else {
+    throw new Error("Invalid turn");
   }
 };
 
