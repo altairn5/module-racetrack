@@ -97,16 +97,24 @@ Race.prototype.getPositionHistory = Race.prototype._deco__playerSpecific(functio
   var positions = [this.startPositions[player.id]];
 
   this.turns[player.id].forEach(function(turn) {
-    var last_position = positions[positions.length - 1];
-    positions.push(this._applyTurnVector(last_position, turn));
+    var lastPosition = positions[positions.length - 1];
+    positions.push(this._applyTurnVector(lastPosition, turn));
   }, this);
   
   return positions;
 });
 
-//Race.prototype.getAllowedTurns = function() {
-//  var 
-//};
+Race.prototype.getAllowedTurns = Race.prototype._deco__playerSpecific(function(player) {
+  var lastTurn = this.turns[player.id][this.turns[player.id].length - 1];
+  var possibleVectors = [];
+  for(var y = -1; y <= 1; y++) {
+    for(var x = -1; x <= 1; x++) {
+      if (x == 0 && y == 0) continue;
+      possibleVectors.push({y: lastTurn.y + y, x: lastTurn.x + x});
+    }
+  }
+  return possibleVectors;
+});
 
 Race.prototype.makePureTurn = function(player, turn) {
   var lastTurn = this.turns[player.id][this.turns[player.id].length - 1] || {y: 0, x: 0};
