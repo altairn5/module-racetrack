@@ -14,6 +14,11 @@ function Race(size_y, size_x) {
   this.startPositions = {};
   this.field = this._generateField(this.field);
   this.turns = {};
+  
+  // for JSON. do we need the history at all?
+  Object.defineProperty(this, 'positionHistory', {enumerable: true, get: function() {
+    return this.getPositionHistory();
+  }});
 }
 
 Race.prototype._deco__playerSpecific = function(func) {
@@ -91,26 +96,44 @@ Race.prototype._applyTurnVector = function(position, vector) {
   return {y: position.y + vector.y, x: position.x + vector.x}
 };
 
-// @todo: add data redundancy for the sake of performance in case if the current approach with
-// each time calculation works bad
 Race.prototype.getPositionHistory = Race.prototype._deco__playerSpecific(function(player) {
   var positions = [this.startPositions[player.id]];
 
-  this.turns[player.id].forEach(function(turn) {
-    var lastPosition = positions[positions.length - 1];
-    positions.push(this._applyTurnVector(lastPosition, turn));
-  }, this);
+  if (this.turns[player.id]) {  
+    this.turns[player.id].forEach(function(turn) {
+      var lastPosition = positions[positions.length - 1];
+      positions.push(this._applyTurnVector(lastPosition, turn));
+    }, this);
+  }
   
   return positions;
 });
 
+Race.prototype._getPlayerIdOnPosition = function(y, x) {
+  var positions = this.getPositionHistory(),
+      currPos;
+  for(var playerId in positions) if (positions.hasOwnProperty(playerId)) {
+    currPos = positions[playerId].pop();
+    if (currPos.y == y && currPos.x == x)
+      return playerId;
+  }
+  return null;
+};
+
 Race.prototype.getAllowedTurns = Race.prototype._deco__playerSpecific(function(player) {
-  var lastTurn = this.turns[player.id][this.turns[player.id].length - 1] || {y:0, x:0};
+  var lastTurn = this.turns[player.id][this.turns[player.id].length - 1] || {y: 0, x: 0};
+  var playerPosition = this.getPositionHistory(player).pop();
   var possibleVectors = [];
+  var xNew, yNew, targetCellTakenBy;
+
   for(var y = -1; y <= 1; y++) {
     for(var x = -1; x <= 1; x++) {
-      if (x == 0 && y == 0) continue;
-      possibleVectors.push({y: lastTurn.y + y, x: lastTurn.x + x});
+      yNew = lastTurn.y + y;
+      xNew = lastTurn.x + x;      
+      // no collisions with others allowed
+      targetCellTakenBy = this._getPlayerIdOnPosition(playerPosition.y + yNew, playerPosition.x + xNew);
+      if(targetCellTakenBy && targetCellTakenBy != player.id ) continue;
+      possibleVectors.push({y: yNew, x: xNew});
     }
   }
   return possibleVectors;
@@ -123,7 +146,6 @@ Race.prototype.makePureTurn = function(player, turn) {
   });
    
   if (allowed) {
-    this.turns[player.id] = this.turns[player.id] || [];
     this.turns[player.id].push(turn);
   } else {
     throw new Error("Invalid turn");
