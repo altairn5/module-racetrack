@@ -105,7 +105,7 @@ Race.prototype.getPositionHistory = Race.prototype._deco__playerSpecific(functio
 });
 
 Race.prototype.getAllowedTurns = Race.prototype._deco__playerSpecific(function(player) {
-  var lastTurn = this.turns[player.id][this.turns[player.id].length - 1];
+  var lastTurn = this.turns[player.id][this.turns[player.id].length - 1] || {y:0, x:0};
   var possibleVectors = [];
   for(var y = -1; y <= 1; y++) {
     for(var x = -1; x <= 1; x++) {
@@ -117,14 +117,13 @@ Race.prototype.getAllowedTurns = Race.prototype._deco__playerSpecific(function(p
 });
 
 Race.prototype.makePureTurn = function(player, turn) {
-  var lastTurn = this.turns[player.id][this.turns[player.id].length - 1] || {y: 0, x: 0};
-  var dx = Math.abs(lastTurn.x - turn.x);
-  var dy = Math.abs(lastTurn.y - turn.y);
-  var bothZero = dx == 0 && dy == 0;
-  
-  if (dx <= 1 && dy <= 1 && !bothZero) {
-    if (!this.turns[player.id])
-      this.turns[player.id] = [];
+  var jsonTurn = JSON.stringify(turn);
+  var allowed = this.getAllowedTurns(player).some(function(turn) {
+    return JSON.stringify(turn) == jsonTurn;
+  });
+   
+  if (allowed) {
+    this.turns[player.id] = this.turns[player.id] || [];
     this.turns[player.id].push(turn);
   } else {
     throw new Error("Invalid turn");
