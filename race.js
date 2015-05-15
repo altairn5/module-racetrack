@@ -16,6 +16,19 @@ function Race(size_y, size_x) {
   this.turns = {};
 }
 
+Race.prototype._deco__playerSpecific = function(func) {
+  return function(player) {
+    var this_ = this;
+    if (!player)
+      return this.players.reduce(function(sum, player) {
+        sum[player.id] = func.call(this_, player);
+        return sum;
+      }, {});
+    else
+      return func.call(this_, player);
+  }
+};
+
 Race.prototype._generateField = function(field) {
   return field;
 };
@@ -80,15 +93,7 @@ Race.prototype._applyTurnVector = function(position, vector) {
 
 // @todo: add data redundancy for the sake of performance in case if the current approach with
 // each time calculation works bad
-Race.prototype.getPositionHistory = function(player) {
-  // @todo: replace with => once is supported by --harmony
-  var this_ = this;
-  if (!player)
-    return this.players.reduce(function(sum, player) {
-      sum[player.id] = this_.getPositionHistory(player);
-      return sum;
-    }, {});
-  
+Race.prototype.getPositionHistory = Race.prototype._deco__playerSpecific(function(player) {
   var positions = [this.startPositions[player.id]];
 
   this.turns[player.id].forEach(function(turn) {
@@ -97,8 +102,11 @@ Race.prototype.getPositionHistory = function(player) {
   }, this);
   
   return positions;
-};
+});
 
+//Race.prototype.getAllowedTurns = function() {
+//  var 
+//};
 
 Race.prototype.makePureTurn = function(player, turn) {
   var lastTurn = this.turns[player.id][this.turns[player.id].length - 1] || {y: 0, x: 0};
