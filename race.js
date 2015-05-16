@@ -1,4 +1,4 @@
-var TurnBased = require('../../base/turn_based_game');
+var TurnBased = require('../base/turn_based_game');
 var turn_based = new TurnBased();
 
 Race.prototype = turn_based;
